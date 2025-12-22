@@ -29,7 +29,7 @@
 
 
 // Camera variables
-bool godMode = false; 
+bool godMode = false;
 float cameraSpeed = 0.01f;
 const float maxCameraSpeed = 0.05f;
 const float minCameraSpeed = 0.005f;
@@ -61,46 +61,49 @@ GLuint lightDirLoc;
 glm::vec3 lightColor;
 GLuint lightColorLoc;
 
+glm::vec3 pointLightPos = glm::vec3(5.0f, 2.0f, 0.0f);
+glm::vec3 pointLightColor = glm::vec3(0.0f, 0.2f, 0.4f);
+bool pointLightOn = true;
+float fogDensity = 0.05f;
+
 gps::Camera myCamera(
     glm::vec3(0.0f, 0.0f, 5.5f),
     glm::vec3(0.0f, 0.0f, 0.0f),
     glm::vec3(0.0f, 1.0f, 0.0f));
 
 bool pressedKeys[1024];
-float angleY = 0.0f;
+float angleY = 180.0f;
 GLfloat lightAngle;
 
 gps::Model3D nanosuit;
 gps::Model3D ground;
 gps::Model3D lightCube;
-gps::Model3D screenQuad;
-gps::Model3D treeModel; 
+gps::Model3D treeModel;
 gps::Model3D creeper;
-
+gps::Model3D zombie;
+gps::Model3D diamondOres;
 gps::SkyBox skyBox;
 gps::Shader skyboxShader;
 
 gps::Shader myCustomShader;
 gps::Shader lightShader;
-gps::Shader screenQuadShader;
 gps::Shader depthMapShader;
 
 GLuint shadowMapFBO;
 GLuint depthMapTexture;
 GLuint repeatLoc;
 GLuint hasAlphaLoc;
-bool showDepthMap;
 
 glm::vec3 forestPositions[] = {
-    glm::vec3(-4.0f, -1.0f, -4.0f),
-    glm::vec3(4.0f, -1.0f, -6.0f),
-    glm::vec3(-2.0f, -1.0f, -10.0f),
-    glm::vec3(6.0f, -1.0f, -2.0f),
-    glm::vec3(0.0f, -1.0f, -14.0f)
+    glm::vec3(-7.0f, -1.0f, -8.0f),
+    glm::vec3(10.0f, -1.0f, -12.0f),
+    glm::vec3(-4.0f, -1.0f, -20.0f),
+    glm::vec3(12.0f, -1.0f, -4.0f),
+    glm::vec3(0.0f, -1.0f, -24.0f)
 };
 
 const GLfloat near_plane = 0.1f;
-const GLfloat far_plane = 6.0f;
+const GLfloat far_plane = 50.0f;
 
 GLenum glCheckError_(const char* file, int line) {
     GLenum errorCode;
@@ -129,8 +132,14 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
 
-    if (key == GLFW_KEY_M && action == GLFW_PRESS)
-        showDepthMap = !showDepthMap;
+    if (key == GLFW_KEY_3 && action == GLFW_PRESS)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+    if (key == GLFW_KEY_4 && action == GLFW_PRESS)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+    if (key == GLFW_KEY_5 && action == GLFW_PRESS)
+        glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
 
     if (key >= 0 && key < 1024)
     {
@@ -217,6 +226,34 @@ void processMovement()
             lastPress = glfwGetTime();
         }
     }
+
+    if (pressedKeys[GLFW_KEY_6])
+    {
+        if (glfwGetTime() - lastPress > debounceThreshhold)
+        {
+            pointLightOn = !pointLightOn;
+            lastPress = glfwGetTime();
+        }
+    }
+
+    if (pressedKeys[GLFW_KEY_7])
+    {
+        if (glfwGetTime() - lastPress > debounceThreshhold)
+        {
+            fogDensity += 0.005f;
+            lastPress = glfwGetTime();
+        }
+    }
+
+    if (pressedKeys[GLFW_KEY_8])
+    {
+        if (glfwGetTime() - lastPress > debounceThreshhold)
+        {
+            if (fogDensity > 0.0f) fogDensity -= 0.005f;
+            lastPress = glfwGetTime();
+        }
+    }
+
     if (pressedKeys[GLFW_KEY_1]) {
         if (glfwGetTime() - lastPress > debounceThreshhold)
         {
@@ -314,10 +351,11 @@ void initOpenGLState()
 void initObjects() {
     nanosuit.LoadModel("objects/nanosuit/nanosuit.obj");
     creeper.LoadModel("objects/creeper/creeper.obj");
+    zombie.LoadModel("objects/zombie/Zombie.obj");
     ground.LoadModel("objects/ground/ground.obj");
     lightCube.LoadModel("objects/cube/cube.obj");
-    screenQuad.LoadModel("objects/quad/quad.obj");
     treeModel.LoadModel("objects/tree_quad/tree_quad.obj");
+    diamondOres.LoadModel("objects/diamondore/diamondore.obj");
 
 }
 
@@ -326,8 +364,6 @@ void initShaders() {
     myCustomShader.useShaderProgram();
     lightShader.loadShader("shaders/lightCube.vert", "shaders/lightCube.frag");
     lightShader.useShaderProgram();
-    screenQuadShader.loadShader("shaders/screenQuad.vert", "shaders/screenQuad.frag");
-    screenQuadShader.useShaderProgram();
     depthMapShader.loadShader("shaders/depthMap.vert", "shaders/depthMap.frag");
     depthMapShader.useShaderProgram();
 
@@ -363,6 +399,8 @@ void initUniforms() {
     lightColor = glm::vec3(1.0f, 1.0f, 1.0f); //white light
     lightColorLoc = glGetUniformLocation(myCustomShader.shaderProgram, "lightColor");
     glUniform3fv(lightColorLoc, 1, glm::value_ptr(lightColor));
+
+    glUniform3fv(glGetUniformLocation(myCustomShader.shaderProgram, "pointLightColor"), 1, glm::value_ptr(pointLightColor));
 
     lightShader.useShaderProgram();
     glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
@@ -405,7 +443,7 @@ void initFBO() {
 
 glm::mat4 computeLightSpaceTrMatrix() {
     glm::mat4 lightView = glm::lookAt((glm::inverseTranspose(glm::mat3(view * lightRotation)) * lightDir), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 lightProjection = glm::ortho(-1.0f, 1.0f, -1.0f, 1.0f, near_plane, far_plane);
+    glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, near_plane, far_plane);
     glm::mat4 lightSpaceTrMatrix = lightProjection * lightView;
     return lightSpaceTrMatrix;
 }
@@ -416,154 +454,138 @@ void renderTree(gps::Shader shader, glm::vec3 position) {
     for (int i = 0; i < 3; i++) {
         model = glm::translate(glm::mat4(1.0f), position);
         model = glm::rotate(model, glm::radians(i * 60.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+        model = glm::scale(model, glm::vec3(5.0f));
         glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1f(hasAlphaLoc, 1.0f);
+
+        glUniform1f(glGetUniformLocation(shader.shaderProgram, "hasAlpha"), 1.0f);
 
         normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
-        glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+        glUniformMatrix3fv(glGetUniformLocation(shader.shaderProgram, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
 
         treeModel.Draw(shader);
     }
 }
 
-void drawObjects(gps::Shader shader, bool depthPass) {
+void drawObjects(gps::Shader shader) {
 
     shader.useShaderProgram();
 
     repeatLoc = glGetUniformLocation(shader.shaderProgram, "textureRepeat");
     hasAlphaLoc = glGetUniformLocation(shader.shaderProgram, "hasAlpha");
-    
 
-
-    // -------NANOSUIT-----------
+    // CREEPER
     model = glm::rotate(glm::mat4(1.0f), glm::radians(angleY), glm::vec3(0.0f, 1.0f, 0.0f));
     model = glm::scale(model, glm::vec3(0.05f));
     model = glm::translate(model, glm::vec3(0.0f, -20.0f, 0.0f));
     glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
-    if (!depthPass) {
-        normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
-        glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-        //No need to repeat textures for nanosuit.
-        glUniform1f(repeatLoc, 1.0f);
-        
-        
-    }
+    normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
+    glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+    glUniform1f(repeatLoc, 1.0f);
 
     creeper.Draw(shader);
 
+    // ZOMBIE
+    model = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(0.5f));
+    model = glm::translate(model, glm::vec3(5.0f, -2.0f, 0.0f));
+    glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+
+    normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
+    glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+    glUniform1f(repeatLoc, 1.0f);
+
+    zombie.Draw(shader);
+
+    // Diamond Ores
+    model = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(0.7f));
+    model = glm::translate(model, glm::vec3(-5.0f, -1.5f, 0.0f));
+    glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+
+    normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
+    glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+    glUniform1f(repeatLoc, 1.0f);
+
+    diamondOres.Draw(shader);
     // Ground Rendering
     model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
     model = glm::scale(model, glm::vec3(7.0f));
     glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
-    if (!depthPass) {
-        glUniform1f(repeatLoc, 500.0f);
-        glUniform1f(hasAlphaLoc, 0.0f);
-        normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
-        glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-    
-        //glActiveTexture(GL_TEXTURE0);
-    }
+    glUniform1f(repeatLoc, 500.0f);
+    glUniform1f(hasAlphaLoc, 0.0f);
+    normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
+    glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
 
     ground.Draw(shader);
 
-    
     // Trees rendering 
-    if (!depthPass) {
-        glUniform1f(repeatLoc, 1.0f); 
-        glDisable(GL_CULL_FACE); 
-    }
+    glUniform1f(repeatLoc, 1.0f);
+    glDisable(GL_CULL_FACE);
 
     for (int i = 0; i < 5; i++) {
         renderTree(shader, forestPositions[i]);
     }
 
-    if (!depthPass) {
-        glEnable(GL_CULL_FACE);
-    }
+    glEnable(GL_CULL_FACE);
 }
 
 
 
 void renderScene() {
 
-    // depth maps creation pass
+    // depth maps creation pass (Internal shadow generation)
     depthMapShader.useShaderProgram();
-
-    glUniformMatrix4fv(
-        glGetUniformLocation(depthMapShader.shaderProgram, "lightSpaceTrMatrix"),
-        1,
-        GL_FALSE,
-        glm::value_ptr(computeLightSpaceTrMatrix())
-    );
-
+    glUniformMatrix4fv(glGetUniformLocation(depthMapShader.shaderProgram, "lightSpaceTrMatrix"), 1, GL_FALSE, glm::value_ptr(computeLightSpaceTrMatrix()));
     glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
-
     glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
     glClear(GL_DEPTH_BUFFER_BIT);
 
-    drawObjects(depthMapShader, true);
+    drawObjects(depthMapShader);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-    // render depth map on screen - toggled with the M key
-    if (showDepthMap) {
-        glViewport(0, 0, retina_width, retina_height);
-        glClear(GL_COLOR_BUFFER_BIT);
+    // final scene rendering pass (with shadows)
+    glViewport(0, 0, retina_width, retina_height);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        screenQuadShader.useShaderProgram();
+    myCustomShader.useShaderProgram();
+    view = myCamera.getViewMatrix();
+    glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, depthMapTexture);
-        glUniform1i(glGetUniformLocation(screenQuadShader.shaderProgram, "depthMap"), 0);
+    lightRotation = glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+    glUniform3fv(lightDirLoc, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view * lightRotation)) * lightDir));
 
-        glDisable(GL_DEPTH_TEST);
-        screenQuad.Draw(screenQuadShader);
-        glEnable(GL_DEPTH_TEST);
-    }
-    else {
+    glUniform1i(glGetUniformLocation(myCustomShader.shaderProgram, "pointLightOn"), pointLightOn ? 1 : 0);
+    glm::vec3 pLightEye = glm::vec3(view * glm::vec4(pointLightPos, 1.0f));
+    glUniform3fv(glGetUniformLocation(myCustomShader.shaderProgram, "pointLightPos"), 1, glm::value_ptr(pLightEye));
+    glUniform1f(glGetUniformLocation(myCustomShader.shaderProgram, "fogDensity"), fogDensity);
 
-        // final scene rendering pass (with shadows)
-        glViewport(0, 0, retina_width, retina_height);
+    //bind the shadow map
+    glActiveTexture(GL_TEXTURE3);
+    glBindTexture(GL_TEXTURE_2D, depthMapTexture);
+    glUniform1i(glGetUniformLocation(myCustomShader.shaderProgram, "shadowMap"), 3);
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glUniformMatrix4fv(glGetUniformLocation(myCustomShader.shaderProgram, "lightSpaceTrMatrix"), 1, GL_FALSE, glm::value_ptr(computeLightSpaceTrMatrix()));
 
-        myCustomShader.useShaderProgram();
+    drawObjects(myCustomShader);
 
-        view = myCamera.getViewMatrix();
-        glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
+    //draw a white cube around the light
+    lightShader.useShaderProgram();
+    glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
+    model = lightRotation;
+    model = glm::translate(model, 1.0f * lightDir);
+    model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
+    glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
-        lightRotation = glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f));
-        glUniform3fv(lightDirLoc, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view * lightRotation)) * lightDir));
+    lightCube.Draw(lightShader);
 
-        //bind the shadow map
-        glActiveTexture(GL_TEXTURE3);
-        glBindTexture(GL_TEXTURE_2D, depthMapTexture);
-        glUniform1i(glGetUniformLocation(myCustomShader.shaderProgram, "shadowMap"), 3);
-
-        glUniformMatrix4fv(glGetUniformLocation(myCustomShader.shaderProgram, "lightSpaceTrMatrix"),
-            1,
-            GL_FALSE,
-            glm::value_ptr(computeLightSpaceTrMatrix()));
-
-        drawObjects(myCustomShader, false);
-
-        //draw a white cube around the light
-        lightShader.useShaderProgram();
-
-        glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-
-        model = lightRotation;
-        model = glm::translate(model, 1.0f * lightDir);
-        model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
-        glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-        lightCube.Draw(lightShader);
-
-        // Draw skybox last
-        skyBox.Draw(skyboxShader, view, projection);
-    }
+ 
+    // Draw skybox last
+    skyboxShader.useShaderProgram();
+    glUniform1f(glGetUniformLocation(skyboxShader.shaderProgram, "fogDensity"), fogDensity);
+    skyBox.Draw(skyboxShader, view, projection);
 }
 
 void cleanup() {

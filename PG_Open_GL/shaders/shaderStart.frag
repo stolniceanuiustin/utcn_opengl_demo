@@ -11,6 +11,11 @@ out vec4 fColor;
 uniform vec3 lightDir;
 uniform vec3 lightColor;
 
+// Point Light
+uniform vec3 pointLightPos;
+uniform vec3 pointLightColor;
+uniform int pointLightOn;
+
 // Texture
 uniform sampler2D diffuseTexture;
 uniform sampler2D specularTexture;
@@ -19,6 +24,7 @@ uniform sampler2D shadowMap;
 uniform float textureRepeat;
 uniform float hasAlpha;
 uniform mat4 view;
+uniform float fogDensity;
 
 vec3 ambient;
 float ambientStrength = 0.2f;
@@ -27,10 +33,12 @@ vec3 specular;
 float specularStrength = 0.5f;
 float shininess = 32.0f;
 
+float constant = 1.0f;
+float linear = 0.045f;
+float quadratic = 0.0075f;
 
 float computeFog()
 {
-    float fogDensity = 0.05f; 
     float fragmentDistance = length(fPosEye.xyz);
     float fogFactor = exp(-pow(fragmentDistance * fogDensity, 2));
 
@@ -75,11 +83,29 @@ void main()
     float shadow = computeShadow();
     computeLightComponents();
     
-    ambient *= colorFromTexture.rgb;
-    diffuse *= colorFromTexture.rgb;
-    specular *= texture(specularTexture, repeatedCoords).rgb;
+    vec3 baseAmbient = ambient * colorFromTexture.rgb;
+    vec3 baseDiffuse = (1.0f - shadow) * diffuse * colorFromTexture.rgb;
+    vec3 baseSpecular = (1.0f - shadow) * specular * texture(specularTexture, repeatedCoords).rgb;
 
-    vec3 color = min((ambient + (1.0f - shadow)*diffuse) + (1.0f - shadow)*specular, 1.0f);
+    vec3 finalPointLight = vec3(0.0f);
+
+    if (pointLightOn == 1) {
+        vec3 normalEye = normalize(fNormal);
+        vec3 viewDirN = normalize(-fPosEye.xyz);
+        vec3 pLightDirN = normalize(pointLightPos - fPosEye.xyz);
+        float dist = length(pointLightPos - fPosEye.xyz);
+        float att = 1.0f / (constant + linear * dist + quadratic * (dist * dist));
+
+        vec3 pAmbient = att * ambientStrength * pointLightColor * colorFromTexture.rgb;
+        vec3 pDiffuse = att * max(dot(normalEye, pLightDirN), 0.0f) * pointLightColor * colorFromTexture.rgb;
+        vec3 pReflection = reflect(-pLightDirN, normalEye);
+        float pSpecCoeff = pow(max(dot(viewDirN, pReflection), 0.0f), shininess);
+        vec3 pSpecular = att * specularStrength * pSpecCoeff * pointLightColor * texture(specularTexture, repeatedCoords).rgb;
+        
+        finalPointLight = pAmbient + pDiffuse + pSpecular;
+    }
+
+    vec3 color = min(baseAmbient + baseDiffuse + baseSpecular + finalPointLight, 1.0f);
 
     float fogFactor = computeFog();
     vec4 fogColor = vec4(0.5f, 0.5f, 0.5f, 1.0f); 

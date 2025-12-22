@@ -1,7 +1,10 @@
 ﻿  main.cpp
-E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(217,36): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(226,36): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(235,36): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(244,36): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(253,36): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(263,36): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
+E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(272,36): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
 glew32s.lib(glew.obj) : warning LNK4099: PDB '' was not found with 'glew32s.lib(glew.obj)' or at ''; linking object as if no debug info
 LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
 LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library
