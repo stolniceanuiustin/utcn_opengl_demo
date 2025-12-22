@@ -1,0 +1,24 @@
+﻿  Camera.cpp
+  main.cpp
+  Mesh.cpp
+  Model3D.cpp
+  Shader.cpp
+E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\Camera.hpp(4,10): error C1083: Cannot open include file: 'glm/glm.hpp': No such file or directory
+  (compiling source file 'Camera.cpp')
+  
+E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(14,10): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\Mesh.hpp(9,14): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  (compiling source file 'Mesh.cpp')
+  
+E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\Mesh.hpp(9,14): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  (compiling source file 'Model3D.cpp')
+  
+E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\Shader.hpp(17,14): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  (compiling source file 'Shader.cpp')
+  
+  SkyBox.cpp
+E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\Shader.hpp(17,14): error C1083: Cannot open include file: 'GL/glew.h': No such file or directory
+  (compiling source file 'SkyBox.cpp')
+  
+  stb_image.cpp
+  tiny_obj_loader.cpp

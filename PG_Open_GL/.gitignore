@@ -1,0 +1,14 @@
+# Visual Studio temporary files
+.vs/
+out/
+build/
+*.user
+*.aps
+*.ipch
+*.sln.doccache
+
+# Compiled binaries
+*.exe
+*.obj
+*.lib
+*.pdb

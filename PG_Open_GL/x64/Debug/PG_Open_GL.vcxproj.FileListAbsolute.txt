@@ -1,0 +1,5 @@
+E:\Facultate\PG - Prelucrare Grafica\ProiectOPENGL\PG_Open_GL\x64\Debug\PG_Open_GL.exe
+E:\Facultate\PG - Prelucrare Grafica\Lab6\PG_Open_GL\x64\Debug\PG_Open_GL.exe
+E:\Facultate\PG - Prelucrare Grafica\Lab7\PG_Open_GL\x64\Debug\PG_Open_GL.exe
+E:\Facultate\PG - Prelucrare Grafica\Lab8\PG_Open_GL\x64\Debug\PG_Open_GL.exe
+E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\x64\Debug\PG_Open_GL.exe
