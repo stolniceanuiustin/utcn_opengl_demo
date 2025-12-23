@@ -26,7 +26,7 @@
 #include "Camera.hpp"
 #include "SkyBox.hpp"
 #include <iostream>
-
+#include <vector>
 
 // Camera variables
 bool godMode = false;
@@ -40,8 +40,8 @@ int glWindowHeight = 600;
 int retina_width, retina_height;
 GLFWwindow* glWindow = NULL;
 
-const unsigned int SHADOW_WIDTH = 2048;
-const unsigned int SHADOW_HEIGHT = 2048;
+const unsigned int SHADOW_WIDTH = 2048 * 4;
+const unsigned int SHADOW_HEIGHT = 2048 * 4;
 
 glm::mat4 model;
 GLuint modelLoc;
@@ -82,6 +82,8 @@ gps::Model3D treeModel;
 gps::Model3D creeper;
 gps::Model3D zombie;
 gps::Model3D diamondOres;
+gps::Model3D mario;
+
 gps::SkyBox skyBox;
 gps::Shader skyboxShader;
 
@@ -102,8 +104,23 @@ glm::vec3 forestPositions[] = {
     glm::vec3(0.0f, -1.0f, -24.0f)
 };
 
-const GLfloat near_plane = 0.1f;
-const GLfloat far_plane = 50.0f;
+const GLfloat nearPlane = 0.01f;
+const GLfloat farPlane = 50.0f;
+const float orthoConst = 80.0f;
+
+// --- Animation Variables ---
+bool isAnimating = false;
+float animationTime = 0.0f;
+std::vector<glm::vec3> cameraPath = {
+    glm::vec3(0.0f, 2.5f, 15.0f),
+    glm::vec3(12.0f, 2.0f, 12.0f),
+    glm::vec3(15.0f, 2.5f, 0.0f),
+    glm::vec3(10.0f, 2.0f, -10.0f),
+    glm::vec3(0.0f, 3.0f, -15.0f),
+    glm::vec3(-10.0f, 2.0f, -10.0f),
+    glm::vec3(-15.0f, 2.5f, 0.0f),
+    glm::vec3(-12.0f, 2.0f, 12.0f)
+};
 
 GLenum glCheckError_(const char* file, int line) {
     GLenum errorCode;
@@ -141,6 +158,12 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
     if (key == GLFW_KEY_5 && action == GLFW_PRESS)
         glPolygonMode(GL_FRONT_AND_BACK, GL_POINT);
 
+    // Toggle Animation
+    if (key == GLFW_KEY_V && action == GLFW_PRESS) {
+        isAnimating = !isAnimating;
+        animationTime = 0.0f;
+    }
+
     if (key >= 0 && key < 1024)
     {
         if (action == GLFW_PRESS)
@@ -149,14 +172,17 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
             pressedKeys[key] = false;
     }
 }
+
 bool firstMouse = true;
-double lastX = glWindowWidth / 2.0;
-double lastY = glWindowHeight / 2.0;
+double lastX = 400.0;
+double lastY = 300.0;
 float yaw = -90.0f;
 float pitch = 0.0f;
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos)
 {
+    if (isAnimating) return; // Disable mouse rotation during animation
+
     if (firstMouse)
     {
         lastX = xpos;
@@ -183,6 +209,7 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos)
 
 float lastPress = 0.0f;
 float debounceThreshhold = 0.2f;
+
 void processMovement()
 {
     if (pressedKeys[GLFW_KEY_Q]) {
@@ -201,20 +228,23 @@ void processMovement()
         lightAngle += 1.0f;
     }
 
-    if (pressedKeys[GLFW_KEY_W]) {
-        myCamera.move(gps::MOVE_FORWARD, cameraSpeed, godMode);
-    }
+    // Disable manual camera movement if animating
+    if (!isAnimating) {
+        if (pressedKeys[GLFW_KEY_W]) {
+            myCamera.move(gps::MOVE_FORWARD, cameraSpeed, godMode);
+        }
 
-    if (pressedKeys[GLFW_KEY_S]) {
-        myCamera.move(gps::MOVE_BACKWARD, cameraSpeed, godMode);
-    }
+        if (pressedKeys[GLFW_KEY_S]) {
+            myCamera.move(gps::MOVE_BACKWARD, cameraSpeed, godMode);
+        }
 
-    if (pressedKeys[GLFW_KEY_A]) {
-        myCamera.move(gps::MOVE_LEFT, cameraSpeed, godMode);
-    }
+        if (pressedKeys[GLFW_KEY_A]) {
+            myCamera.move(gps::MOVE_LEFT, cameraSpeed, godMode);
+        }
 
-    if (pressedKeys[GLFW_KEY_D]) {
-        myCamera.move(gps::MOVE_RIGHT, cameraSpeed, godMode);
+        if (pressedKeys[GLFW_KEY_D]) {
+            myCamera.move(gps::MOVE_RIGHT, cameraSpeed, godMode);
+        }
     }
 
     if (pressedKeys[GLFW_KEY_LEFT_SHIFT])
@@ -272,7 +302,30 @@ void processMovement()
             lastPress = glfwGetTime();
         }
     }
+}
 
+// https://en.wikipedia.org/wiki/Catmull%E2%80%93Rom_spline
+// Catmull-Rom Spline calculation
+glm::vec3 getSplinePoint(float t, std::vector<glm::vec3> points) {
+    int p0, p1, p2, p3;
+    int n = points.size();
+
+    p1 = (int)t % n;
+    p2 = (p1 + 1) % n;
+    p3 = (p2 + 1) % n;
+    p0 = p1 >= 1 ? p1 - 1 : n - 1;
+
+    t = t - (int)t;
+
+    float tt = t * t;
+    float ttt = tt * t;
+
+    float q1 = -ttt + 2.0f * tt - t;
+    float q2 = 3.0f * ttt - 5.0f * tt + 2.0f;
+    float q3 = -3.0f * ttt + 4.0f * tt + t;
+    float q4 = ttt - tt;
+
+    return 0.5f * (points[p0] * q1 + points[p1] * q2 + points[p2] * q3 + points[p3] * q4);
 }
 
 bool initOpenGLWindow()
@@ -299,7 +352,6 @@ bool initOpenGLWindow()
     glWindow = glfwCreateWindow(glWindowWidth, glWindowHeight, "OpenGL Shader Example", NULL, NULL);
     if (!glWindow) {
         fprintf(stderr, "ERROR: could not open window with GLFW3\n");
-        glfwTerminate();
         return false;
     }
 
@@ -344,19 +396,17 @@ void initOpenGLState()
     glEnable(GL_FRAMEBUFFER_SRGB);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-
 }
 
 void initObjects() {
     nanosuit.LoadModel("objects/nanosuit/nanosuit.obj");
+    mario.LoadModel("objects/mario/Mario.obj");
     creeper.LoadModel("objects/creeper/creeper.obj");
     zombie.LoadModel("objects/zombie/Zombie.obj");
     ground.LoadModel("objects/ground/ground.obj");
     lightCube.LoadModel("objects/cube/cube.obj");
     treeModel.LoadModel("objects/tree_quad/tree_quad.obj");
     diamondOres.LoadModel("objects/diamondore/diamondore.obj");
-
 }
 
 void initShaders() {
@@ -404,6 +454,9 @@ void initUniforms() {
 
     lightShader.useShaderProgram();
     glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+
+    depthMapShader.useShaderProgram();
+    glUniform1i(glGetUniformLocation(depthMapShader.shaderProgram, "diffuseTexture"), 0);
 }
 
 void initSkybox() {
@@ -441,14 +494,14 @@ void initFBO() {
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+
 glm::mat4 computeLightSpaceTrMatrix() {
-    glm::mat4 lightView = glm::lookAt((glm::inverseTranspose(glm::mat3(view * lightRotation)) * lightDir), glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    glm::mat4 lightProjection = glm::ortho(-20.0f, 20.0f, -20.0f, 20.0f, near_plane, far_plane);
+    glm::vec3 worldLightDir = glm::vec3(lightRotation * glm::vec4(lightDir, 0.0f));
+    glm::mat4 lightView = glm::lookAt(worldLightDir * 20.0f, glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    glm::mat4 lightProjection = glm::ortho(-orthoConst, orthoConst, -orthoConst, orthoConst, nearPlane, farPlane);
     glm::mat4 lightSpaceTrMatrix = lightProjection * lightView;
     return lightSpaceTrMatrix;
 }
-
-
 
 void renderTree(gps::Shader shader, glm::vec3 position) {
     for (int i = 0; i < 3; i++) {
@@ -474,16 +527,30 @@ void drawObjects(gps::Shader shader) {
     hasAlphaLoc = glGetUniformLocation(shader.shaderProgram, "hasAlpha");
 
     // CREEPER
-    model = glm::rotate(glm::mat4(1.0f), glm::radians(angleY), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::rotate(glm::mat4(1.0f), glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     model = glm::scale(model, glm::vec3(0.05f));
-    model = glm::translate(model, glm::vec3(0.0f, -20.0f, 0.0f));
+    model = glm::translate(model, glm::vec3(-80.0f, -20.0f, -80.0f));
     glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
 
     normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
     glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
     glUniform1f(repeatLoc, 1.0f);
+    glUniform1f(hasAlphaLoc, 0.0f); 
 
     creeper.Draw(shader);
+
+    // NANOSUIT
+    model = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f + angleY), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(1.0f));
+    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
+    glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+
+    normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
+    glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+    glUniform1f(repeatLoc, 1.0f);
+    glUniform1f(hasAlphaLoc, 0.0f);
+    nanosuit.Draw(shader);
+
 
     // ZOMBIE
     model = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -494,7 +561,7 @@ void drawObjects(gps::Shader shader) {
     normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
     glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
     glUniform1f(repeatLoc, 1.0f);
-
+    glUniform1f(hasAlphaLoc, 1.0f); 
     zombie.Draw(shader);
 
     // Diamond Ores
@@ -506,8 +573,23 @@ void drawObjects(gps::Shader shader) {
     normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
     glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
     glUniform1f(repeatLoc, 1.0f);
+    glUniform1f(hasAlphaLoc, 0.0f);
 
     diamondOres.Draw(shader);
+
+    // Mario
+    model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    model = glm::scale(model, glm::vec3(0.5f));
+    model = glm::translate(model, glm::vec3(-6.0f, -2.0f, -4.0f));
+    glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
+
+    normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
+    glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+    glUniform1f(repeatLoc, 1.0f);
+    glUniform1f(hasAlphaLoc, 0.0f);
+    mario.Draw(shader);
+
+
     // Ground Rendering
     model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
     model = glm::scale(model, glm::vec3(7.0f));
@@ -531,8 +613,6 @@ void drawObjects(gps::Shader shader) {
     glEnable(GL_CULL_FACE);
 }
 
-
-
 void renderScene() {
 
     // depth maps creation pass (Internal shadow generation)
@@ -542,7 +622,9 @@ void renderScene() {
     glBindFramebuffer(GL_FRAMEBUFFER, shadowMapFBO);
     glClear(GL_DEPTH_BUFFER_BIT);
 
+    glCullFace(GL_FRONT);
     drawObjects(depthMapShader);
+    glCullFace(GL_BACK);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
@@ -551,7 +633,17 @@ void renderScene() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     myCustomShader.useShaderProgram();
-    view = myCamera.getViewMatrix();
+
+    // Update Camera for Aniation 
+    if (isAnimating) {
+        animationTime += 0.005f; // Animation speed
+        glm::vec3 animPos = getSplinePoint(animationTime, cameraPath);
+        view = glm::lookAt(animPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+    }
+    else {
+        view = myCamera.getViewMatrix();
+    }
+
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
     lightRotation = glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f));
@@ -581,7 +673,6 @@ void renderScene() {
 
     lightCube.Draw(lightShader);
 
- 
     // Draw skybox last
     skyboxShader.useShaderProgram();
     glUniform1f(glGetUniformLocation(skyboxShader.shaderProgram, "fogDensity"), fogDensity);

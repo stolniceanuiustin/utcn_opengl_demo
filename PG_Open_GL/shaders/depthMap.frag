@@ -1,8 +1,17 @@
 #version 410 core
-out vec4 fColor;
 
+in vec2 texCoords;
+
+uniform sampler2D diffuseTexture;
+uniform float hasAlpha;
 
 void main()
 {
-    fColor = vec4(1.0f);
+    if (hasAlpha > 0.5) {
+        float alpha = texture(diffuseTexture, texCoords).a;
+        if(alpha < 0.1) {
+            discard; 
+        }
+    }
+
 }

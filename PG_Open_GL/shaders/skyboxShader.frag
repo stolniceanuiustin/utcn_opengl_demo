@@ -8,7 +8,7 @@ uniform float fogDensity;
 
 void main()
 {
-    vec4 skyboxColor = texture(skybox, textureCoordinates);
+    vec4 skyboxColor = texture(skybox, textureCoordinates, 2.5);
     vec4 fogColor = vec4(0.5f, 0.5f, 0.5f, 1.0f);
 
     float factor = clamp(1.0 - abs(textureCoordinates.y), 0.0, 1.0);
