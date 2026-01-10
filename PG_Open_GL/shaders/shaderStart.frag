@@ -7,68 +7,62 @@ in vec4 fragPosLightSpace;
 
 out vec4 fColor;
 
-// Lighting
+// Directional light(the moving sun)
 uniform vec3 lightDir;
 uniform vec3 lightColor;
 
-// Point Light
+// Point Light (the diamond ore)
 uniform vec3 pointLightPos;
 uniform vec3 pointLightColor;
 uniform int pointLightOn;
 
-// Texture
+// Spotlight (Flashlight)
+uniform int flashlightOn;
+uniform vec3 spotLightDir; // In eye space: vec3(0.0, 0.0, -1.0)
+uniform float spotLightCutOff;
+uniform float spotLightOuterCutOff;
+
+// Textures
 uniform sampler2D diffuseTexture;
 uniform sampler2D specularTexture;
 uniform sampler2D shadowMap;
 
 uniform float textureRepeat;
 uniform float hasAlpha;
-uniform mat4 view;
 uniform float fogDensity;
 
-vec3 ambient;
+//Lighting coefficients
 float ambientStrength = 0.2f;
-vec3 diffuse;
-vec3 specular;
 float specularStrength = 0.5f;
 float shininess = 32.0f;
 
+//Attenuation constants
 float constant = 1.0f;
 float linear = 0.045f;
 float quadratic = 0.0075f;
 
-float computeFog()
+vec3 computeFog(vec3 color)
 {
     float fragmentDistance = length(fPosEye.xyz);
     float fogFactor = exp(-pow(fragmentDistance * fogDensity, 2));
-
-    return clamp(fogFactor, 0.0f, 1.0f);
+    fogFactor = clamp(fogFactor, 0.0f, 1.0f);
+    
+    vec3 fogColor = vec3(0.5f, 0.5f, 0.5f);
+    return mix(fogColor, color, fogFactor);
 }
 
 float computeShadow() {
     vec3 normalizedCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
     normalizedCoords = normalizedCoords * 0.5 + 0.5;
+    
+    if(normalizedCoords.z > 1.0) return 0.0;
+    
     float closestDepth = texture(shadowMap, normalizedCoords.xy).r;
     float currentDepth = normalizedCoords.z;
     float bias = 0.005f;
     float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
-    if(normalizedCoords.z > 1.0) return 0.0;
-    return shadow;
-}
-
-void computeLightComponents()
-{       
-    vec3 cameraPosEye = vec3(0.0f);
-    vec3 normalEye = normalize(fNormal);    
-    vec3 lightDirN = normalize(lightDir);
-    vec3 viewDirN = normalize(cameraPosEye - fPosEye.xyz);
-        
-    ambient = ambientStrength * lightColor;
-    diffuse = max(dot(normalEye, lightDirN), 0.0f) * lightColor;
     
-    vec3 reflection = reflect(-lightDirN, normalEye);
-    float specCoeff = pow(max(dot(viewDirN, reflection), 0.0f), shininess);
-    specular = specularStrength * specCoeff * lightColor;
+    return shadow;
 }
 
 void main() 
@@ -76,39 +70,58 @@ void main()
     vec2 repeatedCoords = fTexCoords * textureRepeat;
     vec4 colorFromTexture = texture(diffuseTexture, repeatedCoords);
     
-    if(hasAlpha > 0.5f)
-        if(colorFromTexture.a < 0.9)
-            discard;
+    if(hasAlpha > 0.5f && colorFromTexture.a < 0.9)
+        discard;
 
-    float shadow = computeShadow();
-    computeLightComponents();
-    
-    vec3 baseAmbient = ambient * colorFromTexture.rgb;
-    vec3 baseDiffuse = (1.0f - shadow) * diffuse * colorFromTexture.rgb;
-    vec3 baseSpecular = (1.0f - shadow) * specular * texture(specularTexture, repeatedCoords).rgb;
+    vec3 normalEye = normalize(fNormal);
+    vec3 viewDirN = normalize(-fPosEye.xyz);
+    vec3 finalLight = vec3(0.0);
 
-    vec3 finalPointLight = vec3(0.0f);
+    if (flashlightOn == 1) {
+        // FLASHLIGHT LOGIC
+        // In Eye Space, poziția luminii este (0,0,0) deoarece este atașată camerei
+        vec3 lightDirN = normalize(-fPosEye.xyz); 
+        float theta = dot(lightDirN, normalize(-spotLightDir));
+        float epsilon = spotLightCutOff - spotLightOuterCutOff;
+        float intensity = clamp((theta - spotLightOuterCutOff) / epsilon, 0.0, 1.0);
 
+        // Diffuse
+        float diff = max(dot(normalEye, lightDirN), 0.0f);
+        // Specular
+        vec3 reflection = reflect(-lightDirN, normalEye);
+        float specCoeff = pow(max(dot(viewDirN, reflection), 0.0f), shininess);
+
+        vec3 spotAmbient = ambientStrength * vec3(1.0) * colorFromTexture.rgb;
+        vec3 spotDiffuse = diff * vec3(1.0) * colorFromTexture.rgb;
+        vec3 spotSpecular = specularStrength * specCoeff * texture(specularTexture, repeatedCoords).rgb;
+
+        finalLight = (spotAmbient + spotDiffuse + spotSpecular) * intensity;
+    } 
+    else {
+        // SPOTLIGHT LOGIC
+        float shadow = computeShadow();
+        vec3 lightDirN = normalize(lightDir);
+        
+        vec3 ambient = ambientStrength * lightColor * colorFromTexture.rgb;
+        vec3 diffuse = max(dot(normalEye, lightDirN), 0.0f) * lightColor * colorFromTexture.rgb;
+        
+        vec3 reflection = reflect(-lightDirN, normalEye);
+        float specCoeff = pow(max(dot(viewDirN, reflection), 0.0f), shininess);
+        vec3 specular = specularStrength * specCoeff * lightColor * texture(specularTexture, repeatedCoords).rgb;
+
+        finalLight = ambient + (1.0 - shadow) * (diffuse + specular);
+    }
+
+    // POINT LIGHT
     if (pointLightOn == 1) {
-        vec3 normalEye = normalize(fNormal);
-        vec3 viewDirN = normalize(-fPosEye.xyz);
         vec3 pLightDirN = normalize(pointLightPos - fPosEye.xyz);
         float dist = length(pointLightPos - fPosEye.xyz);
         float att = 1.0f / (constant + linear * dist + quadratic * (dist * dist));
 
-        vec3 pAmbient = att * ambientStrength * pointLightColor * colorFromTexture.rgb;
         vec3 pDiffuse = att * max(dot(normalEye, pLightDirN), 0.0f) * pointLightColor * colorFromTexture.rgb;
-        vec3 pReflection = reflect(-pLightDirN, normalEye);
-        float pSpecCoeff = pow(max(dot(viewDirN, pReflection), 0.0f), shininess);
-        vec3 pSpecular = att * specularStrength * pSpecCoeff * pointLightColor * texture(specularTexture, repeatedCoords).rgb;
-        
-        finalPointLight = pAmbient + pDiffuse + pSpecular;
+        finalLight += pDiffuse;
     }
 
-    vec3 color = min(baseAmbient + baseDiffuse + baseSpecular + finalPointLight, 1.0f);
-
-    float fogFactor = computeFog();
-    vec4 fogColor = vec4(0.5f, 0.5f, 0.5f, 1.0f); 
-    
-    fColor = mix(fogColor, vec4(color, 1.0f), fogFactor);
+    vec3 finalColor = min(finalLight, 1.0f);
+    fColor = vec4(computeFog(finalColor), 1.0f);
 }

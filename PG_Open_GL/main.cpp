@@ -1,4 +1,4 @@
-//
+﻿//
 //  main.cpp
 //  OpenGL Advances Lighting
 //
@@ -65,6 +65,8 @@ GLuint lightColorLoc;
 glm::vec3 pointLightPos = glm::vec3(5.0f, 2.0f, 0.0f);
 glm::vec3 pointLightColor = glm::vec3(0.0f, 0.2f, 0.4f);
 bool pointLightOn = true;
+
+bool flashlightOn = false;
 float fogDensity = 0.05f;
 
 gps::Camera myCamera(
@@ -149,6 +151,11 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
         animationTime = 0.0f;
     }
 
+    //Toggle flashlight
+
+    if (key == GLFW_KEY_F && action == GLFW_PRESS) {
+        flashlightOn = !flashlightOn;
+    }
     if (key >= 0 && key < 1024)
     {
         if (action == GLFW_PRESS)
@@ -156,6 +163,8 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
         else if (action == GLFW_RELEASE)
             pressedKeys[key] = false;
     }
+
+
 }
 
 bool firstMouse = true;
@@ -492,7 +501,6 @@ glm::mat4 computeLightSpaceTrMatrix() {
     glm::mat4 lightSpaceTrMatrix = lightProjection * lightView;
     return lightSpaceTrMatrix;
 }
-
 void renderScene() {
 
     // depth maps creation pass (Internal shadow generation)
@@ -527,6 +535,19 @@ void renderScene() {
 
     glUniformMatrix4fv(viewLoc, 1, GL_FALSE, glm::value_ptr(view));
 
+    // Update Flashlight (Spotlight)
+    glUniform1i(glGetUniformLocation(myCustomShader.shaderProgram, "flashlightOn"), flashlightOn ? 1 : 0);
+
+    if (flashlightOn) {
+        // Set flashlight direction in eye space (forward)
+        glUniform3f(glGetUniformLocation(myCustomShader.shaderProgram, "spotLightDir"), 0.0f, 0.0f, -1.0f);
+
+        // Set cone angles for soft edges
+        glUniform1f(glGetUniformLocation(myCustomShader.shaderProgram, "spotLightCutOff"), glm::cos(glm::radians(12.5f)));
+        glUniform1f(glGetUniformLocation(myCustomShader.shaderProgram, "spotLightOuterCutOff"), glm::cos(glm::radians(17.5f)));
+    }
+
+    // Set the light direction (direction towards the light)
     lightRotation = glm::rotate(glm::mat4(1.0f), glm::radians(lightAngle), glm::vec3(0.0f, 1.0f, 0.0f));
     glUniform3fv(lightDirLoc, 1, glm::value_ptr(glm::inverseTranspose(glm::mat3(view * lightRotation)) * lightDir));
 
@@ -535,7 +556,7 @@ void renderScene() {
     glUniform3fv(glGetUniformLocation(myCustomShader.shaderProgram, "pointLightPos"), 1, glm::value_ptr(pLightEye));
     glUniform1f(glGetUniformLocation(myCustomShader.shaderProgram, "fogDensity"), fogDensity);
 
-    //bind the shadow map
+    // bind the shadow map
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, depthMapTexture);
     glUniform1i(glGetUniformLocation(myCustomShader.shaderProgram, "shadowMap"), 3);
@@ -546,14 +567,16 @@ void renderScene() {
     myScene.draw(myCustomShader, view, angleY);
 
     // Draw Light Cube via Scene class
-    myScene.drawLightCube(lightShader, view, lightRotation, lightDir);
+    // Only draw the sun cube if flashlight is off
+    if (!flashlightOn) {
+        myScene.drawLightCube(lightShader, view, lightRotation, lightDir);
+    }
 
     // Draw skybox last
     skyboxShader.useShaderProgram();
     glUniform1f(glGetUniformLocation(skyboxShader.shaderProgram, "fogDensity"), fogDensity);
     skyBox.Draw(skyboxShader, view, projection);
 }
-
 void cleanup() {
     glDeleteTextures(1, &depthMapTexture);
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
