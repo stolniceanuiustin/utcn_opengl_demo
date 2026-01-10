@@ -25,6 +25,8 @@
 #include "Model3D.hpp"
 #include "Camera.hpp"
 #include "SkyBox.hpp"
+#include "Objects.hpp"
+
 #include <iostream>
 #include <vector>
 
@@ -32,7 +34,7 @@
 bool godMode = false;
 float cameraSpeed = 0.01f;
 const float maxCameraSpeed = 0.05f;
-const float minCameraSpeed = 0.005f;
+const float minCameraSpeed = 0.01f;
 const float cameraSpeedIncrement = 0.005f;
 
 int glWindowWidth = 800;
@@ -53,7 +55,6 @@ glm::mat3 normalMatrix;
 GLuint normalMatrixLoc;
 glm::mat4 lightRotation;
 
-//glm::mat4 lightSpaceTrMatrix;
 GLuint lightSpaceTrMatrixLoc;
 
 glm::vec3 lightDir;
@@ -75,14 +76,8 @@ bool pressedKeys[1024];
 float angleY = 180.0f;
 GLfloat lightAngle;
 
-gps::Model3D nanosuit;
-gps::Model3D ground;
-gps::Model3D lightCube;
-gps::Model3D treeModel;
-gps::Model3D creeper;
-gps::Model3D zombie;
-gps::Model3D diamondOres;
-gps::Model3D mario;
+
+gps::Scene myScene;
 
 gps::SkyBox skyBox;
 gps::Shader skyboxShader;
@@ -93,22 +88,12 @@ gps::Shader depthMapShader;
 
 GLuint shadowMapFBO;
 GLuint depthMapTexture;
-GLuint repeatLoc;
-GLuint hasAlphaLoc;
-
-glm::vec3 forestPositions[] = {
-    glm::vec3(-7.0f, -1.0f, -8.0f),
-    glm::vec3(10.0f, -1.0f, -12.0f),
-    glm::vec3(-4.0f, -1.0f, -20.0f),
-    glm::vec3(12.0f, -1.0f, -4.0f),
-    glm::vec3(0.0f, -1.0f, -24.0f)
-};
 
 const GLfloat nearPlane = 0.01f;
 const GLfloat farPlane = 50.0f;
 const float orthoConst = 80.0f;
 
-// --- Animation Variables ---
+// ANIMATION VARIABLES
 bool isAnimating = false;
 float animationTime = 0.0f;
 std::vector<glm::vec3> cameraPath = {
@@ -181,7 +166,7 @@ float pitch = 0.0f;
 
 void mouseCallback(GLFWwindow* window, double xpos, double ypos)
 {
-    if (isAnimating) return; // Disable mouse rotation during animation
+    if (isAnimating) return;
 
     if (firstMouse)
     {
@@ -208,7 +193,10 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos)
 }
 
 float lastPress = 0.0f;
-float debounceThreshhold = 0.2f;
+float debounceThreshold = 0.2f;
+
+float decelerationThreshold = 0.4f;
+float lastDeceleration = 0.0f;
 
 void processMovement()
 {
@@ -230,36 +218,35 @@ void processMovement()
 
     // Disable manual camera movement if animating
     if (!isAnimating) {
-        if (pressedKeys[GLFW_KEY_W]) {
-            myCamera.move(gps::MOVE_FORWARD, cameraSpeed, godMode);
-        }
+        glm::vec3 originalPosition = myCamera.getPosition(); 
 
-        if (pressedKeys[GLFW_KEY_S]) {
-            myCamera.move(gps::MOVE_BACKWARD, cameraSpeed, godMode);
-        }
 
-        if (pressedKeys[GLFW_KEY_A]) {
-            myCamera.move(gps::MOVE_LEFT, cameraSpeed, godMode);
-        }
+        auto attemptMove = [&](gps::MOVE_DIRECTION dir) {
+            myCamera.move(dir, cameraSpeed, godMode);
+            if (!godMode && myScene.checkCollision(myCamera.getPosition())) {
+                myCamera.setPosition(originalPosition);
+            }
+            };
 
-        if (pressedKeys[GLFW_KEY_D]) {
-            myCamera.move(gps::MOVE_RIGHT, cameraSpeed, godMode);
-        }
+        if (pressedKeys[GLFW_KEY_W]) attemptMove(gps::MOVE_FORWARD);
+        if (pressedKeys[GLFW_KEY_S]) attemptMove(gps::MOVE_BACKWARD);
+        if (pressedKeys[GLFW_KEY_A]) attemptMove(gps::MOVE_LEFT);
+        if (pressedKeys[GLFW_KEY_D]) attemptMove(gps::MOVE_RIGHT);
     }
 
     if (pressedKeys[GLFW_KEY_LEFT_SHIFT])
     {
-        if (glfwGetTime() - lastPress > debounceThreshhold)
+        if (glfwGetTime() - lastPress > debounceThreshold)
         {
             godMode = !godMode;
-            std::cout << "CHANGED GODMODE!";
+            std::cout << "CHANGED GODMODE!" << std::endl;
             lastPress = glfwGetTime();
         }
     }
 
     if (pressedKeys[GLFW_KEY_6])
     {
-        if (glfwGetTime() - lastPress > debounceThreshhold)
+        if (glfwGetTime() - lastPress > debounceThreshold)
         {
             pointLightOn = !pointLightOn;
             lastPress = glfwGetTime();
@@ -268,7 +255,7 @@ void processMovement()
 
     if (pressedKeys[GLFW_KEY_7])
     {
-        if (glfwGetTime() - lastPress > debounceThreshhold)
+        if (glfwGetTime() - lastPress > debounceThreshold)
         {
             fogDensity += 0.005f;
             lastPress = glfwGetTime();
@@ -277,7 +264,7 @@ void processMovement()
 
     if (pressedKeys[GLFW_KEY_8])
     {
-        if (glfwGetTime() - lastPress > debounceThreshhold)
+        if (glfwGetTime() - lastPress > debounceThreshold)
         {
             if (fogDensity > 0.0f) fogDensity -= 0.005f;
             lastPress = glfwGetTime();
@@ -285,7 +272,7 @@ void processMovement()
     }
 
     if (pressedKeys[GLFW_KEY_1]) {
-        if (glfwGetTime() - lastPress > debounceThreshhold)
+        if (glfwGetTime() - lastPress > debounceThreshold)
         {
             if (cameraSpeed > minCameraSpeed) {
                 cameraSpeed -= cameraSpeedIncrement;
@@ -293,13 +280,22 @@ void processMovement()
             lastPress = glfwGetTime();
         }
     }
-    if (pressedKeys[GLFW_KEY_2]) {
-        if (glfwGetTime() - lastPress > debounceThreshhold)
+    if (pressedKeys[GLFW_KEY_LEFT_CONTROL]) {
+        if (glfwGetTime() - lastPress > debounceThreshold)
         {
             if (cameraSpeed < maxCameraSpeed) {
                 cameraSpeed += cameraSpeedIncrement;
             }
             lastPress = glfwGetTime();
+        }
+    }
+    else if (!pressedKeys[GLFW_KEY_LEFT_CONTROL]) {
+        if (glfwGetTime() - lastDeceleration > decelerationThreshold)
+        {
+            if (cameraSpeed > minCameraSpeed) {
+                cameraSpeed -= cameraSpeedIncrement;
+            }
+            lastDeceleration = glfwGetTime();
         }
     }
 }
@@ -399,14 +395,8 @@ void initOpenGLState()
 }
 
 void initObjects() {
-    nanosuit.LoadModel("objects/nanosuit/nanosuit.obj");
-    mario.LoadModel("objects/mario/Mario.obj");
-    creeper.LoadModel("objects/creeper/creeper.obj");
-    zombie.LoadModel("objects/zombie/Zombie.obj");
-    ground.LoadModel("objects/ground/ground.obj");
-    lightCube.LoadModel("objects/cube/cube.obj");
-    treeModel.LoadModel("objects/tree_quad/tree_quad.obj");
-    diamondOres.LoadModel("objects/diamondore/diamondore.obj");
+    // Delegated to Scene class
+    myScene.loadModels();
 }
 
 void initShaders() {
@@ -503,116 +493,6 @@ glm::mat4 computeLightSpaceTrMatrix() {
     return lightSpaceTrMatrix;
 }
 
-void renderTree(gps::Shader shader, glm::vec3 position) {
-    for (int i = 0; i < 3; i++) {
-        model = glm::translate(glm::mat4(1.0f), position);
-        model = glm::rotate(model, glm::radians(i * 60.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-        model = glm::scale(model, glm::vec3(5.0f));
-        glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-        glUniform1f(glGetUniformLocation(shader.shaderProgram, "hasAlpha"), 1.0f);
-
-        normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
-        glUniformMatrix3fv(glGetUniformLocation(shader.shaderProgram, "normalMatrix"), 1, GL_FALSE, glm::value_ptr(normalMatrix));
-
-        treeModel.Draw(shader);
-    }
-}
-
-void drawObjects(gps::Shader shader) {
-
-    shader.useShaderProgram();
-
-    repeatLoc = glGetUniformLocation(shader.shaderProgram, "textureRepeat");
-    hasAlphaLoc = glGetUniformLocation(shader.shaderProgram, "hasAlpha");
-
-    // CREEPER
-    model = glm::rotate(glm::mat4(1.0f), glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(0.05f));
-    model = glm::translate(model, glm::vec3(-80.0f, -20.0f, -80.0f));
-    glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-    normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
-    glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-    glUniform1f(repeatLoc, 1.0f);
-    glUniform1f(hasAlphaLoc, 0.0f); 
-
-    creeper.Draw(shader);
-
-    // NANOSUIT
-    model = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f + angleY), glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(1.0f));
-    model = glm::translate(model, glm::vec3(0.0f, 0.0f, 0.0f));
-    glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-    normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
-    glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-    glUniform1f(repeatLoc, 1.0f);
-    glUniform1f(hasAlphaLoc, 0.0f);
-    nanosuit.Draw(shader);
-
-
-    // ZOMBIE
-    model = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(0.5f));
-    model = glm::translate(model, glm::vec3(5.0f, -2.0f, 0.0f));
-    glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-    normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
-    glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-    glUniform1f(repeatLoc, 1.0f);
-    glUniform1f(hasAlphaLoc, 1.0f); 
-    zombie.Draw(shader);
-
-    // Diamond Ores
-    model = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(0.7f));
-    model = glm::translate(model, glm::vec3(-5.0f, -1.5f, 0.0f));
-    glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-    normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
-    glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-    glUniform1f(repeatLoc, 1.0f);
-    glUniform1f(hasAlphaLoc, 0.0f);
-
-    diamondOres.Draw(shader);
-
-    // Mario
-    model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(0.5f));
-    model = glm::translate(model, glm::vec3(-6.0f, -2.0f, -4.0f));
-    glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-    normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
-    glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-    glUniform1f(repeatLoc, 1.0f);
-    glUniform1f(hasAlphaLoc, 0.0f);
-    mario.Draw(shader);
-
-
-    // Ground Rendering
-    model = glm::translate(glm::mat4(1.0f), glm::vec3(0.0f, -1.0f, 0.0f));
-    model = glm::scale(model, glm::vec3(7.0f));
-    glUniformMatrix4fv(glGetUniformLocation(shader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-    glUniform1f(repeatLoc, 500.0f);
-    glUniform1f(hasAlphaLoc, 0.0f);
-    normalMatrix = glm::mat3(glm::inverseTranspose(view * model));
-    glUniformMatrix3fv(normalMatrixLoc, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-
-    ground.Draw(shader);
-
-    // Trees rendering 
-    glUniform1f(repeatLoc, 1.0f);
-    glDisable(GL_CULL_FACE);
-
-    for (int i = 0; i < 5; i++) {
-        renderTree(shader, forestPositions[i]);
-    }
-
-    glEnable(GL_CULL_FACE);
-}
-
 void renderScene() {
 
     // depth maps creation pass (Internal shadow generation)
@@ -623,7 +503,8 @@ void renderScene() {
     glClear(GL_DEPTH_BUFFER_BIT);
 
     glCullFace(GL_FRONT);
-    drawObjects(depthMapShader);
+    // Draw via Scene class
+    myScene.draw(depthMapShader, view, angleY);
     glCullFace(GL_BACK);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -661,17 +542,11 @@ void renderScene() {
 
     glUniformMatrix4fv(glGetUniformLocation(myCustomShader.shaderProgram, "lightSpaceTrMatrix"), 1, GL_FALSE, glm::value_ptr(computeLightSpaceTrMatrix()));
 
-    drawObjects(myCustomShader);
+    // Draw via Scene class
+    myScene.draw(myCustomShader, view, angleY);
 
-    //draw a white cube around the light
-    lightShader.useShaderProgram();
-    glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "view"), 1, GL_FALSE, glm::value_ptr(view));
-    model = lightRotation;
-    model = glm::translate(model, 1.0f * lightDir);
-    model = glm::scale(model, glm::vec3(0.05f, 0.05f, 0.05f));
-    glUniformMatrix4fv(glGetUniformLocation(lightShader.shaderProgram, "model"), 1, GL_FALSE, glm::value_ptr(model));
-
-    lightCube.Draw(lightShader);
+    // Draw Light Cube via Scene class
+    myScene.drawLightCube(lightShader, view, lightRotation, lightDir);
 
     // Draw skybox last
     skyboxShader.useShaderProgram();

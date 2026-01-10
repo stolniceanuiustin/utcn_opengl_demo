@@ -18,7 +18,7 @@ namespace gps
     }
 
     void Camera::move(MOVE_DIRECTION direction, float speed, bool godMode) {
-        
+
         switch (direction) {
         case MOVE_FORWARD:
             if (!godMode)
@@ -54,7 +54,7 @@ namespace gps
         }
         cameraTarget = cameraPosition + cameraFrontDirection;
     }
-   
+
     void Camera::rotate(float pitch, float yaw)
     {
         glm::vec3 front;
@@ -65,5 +65,16 @@ namespace gps
 
         cameraRightDirection = glm::normalize(glm::cross(cameraFrontDirection, glm::vec3(0.0f, 1.0f, 0.0f)));
         cameraUpDirection = glm::normalize(glm::cross(cameraRightDirection, cameraFrontDirection));
+    }
+
+    glm::vec3 Camera::getPosition()
+    {
+        return cameraPosition;
+    }
+
+    void Camera::setPosition(glm::vec3 position)
+    {
+        this->cameraPosition = position;
+        this->cameraTarget = this->cameraPosition + this->cameraFrontDirection;
     }
 }
