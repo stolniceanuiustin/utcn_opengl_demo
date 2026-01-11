@@ -1,0 +1,9 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{c+c1}{// Data for a single tree instance in the world}
+\PYG{k}{struct}\PYG{+w}{ }\PYG{n+nc}{TreeInstance}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{n}{glm}\PYG{o}{::}\PYG{n}{vec3}\PYG{+w}{ }\PYG{n}{position}\PYG{p}{;}
+\PYG{+w}{    }\PYG{k+kt}{int}\PYG{+w}{ }\PYG{n}{typeIndex}\PYG{p}{;}\PYG{+w}{   }\PYG{c+c1}{// 0, 1, or 2 (determines which .obj to use)}
+\PYG{+w}{    }\PYG{k+kt}{float}\PYG{+w}{ }\PYG{n}{scale}\PYG{p}{;}
+\PYG{+w}{    }\PYG{k+kt}{float}\PYG{+w}{ }\PYG{n}{rotationY}\PYG{p}{;}
+\PYG{p}{\PYGZcb{};}
+\end{MintedVerbatim}
