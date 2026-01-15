@@ -53,7 +53,8 @@ namespace gps {
         Model3D zombie;
         Model3D ground;
         Model3D lightCube;
-        Model3D diamondOres;
+        Model3D bonfire;
+        Model3D tent;
 
         //Tree Models (Pointers to avoid copy issues)
         std::vector<Model3D*> treeModels;

@@ -1,10 +1,6 @@
-﻿  main.cpp
-E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(252,36): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(261,36): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(270,36): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(279,36): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(289,36): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(298,36): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(307,43): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\main.cpp(316,11): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
-  PG_Open_GL.vcxproj -> E:\Facultate\PG - Prelucrare Grafica\Lab9\PG_Open_GL\x64\Debug\PG_Open_GL.exe
+﻿  Objects.cpp
+E:\Facultate\PG\Lab9\PG_Open_GL\Objects.cpp(7,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+E:\Facultate\PG\Lab9\PG_Open_GL\Objects.cpp(8,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+E:\Facultate\PG\Lab9\PG_Open_GL\Objects.cpp(9,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+E:\Facultate\PG\Lab9\PG_Open_GL\Objects.cpp(10,10): warning C4067: unexpected tokens following preprocessor directive - expected a newline
+  PG_Open_GL.vcxproj -> E:\Facultate\PG\Lab9\PG_Open_GL\x64\Debug\PG_Open_GL.exe

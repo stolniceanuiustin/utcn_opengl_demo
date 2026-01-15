@@ -63,7 +63,7 @@ glm::vec3 lightColor;
 GLuint lightColorLoc;
 
 glm::vec3 pointLightPos = glm::vec3(5.0f, 2.0f, 0.0f);
-glm::vec3 pointLightColor = glm::vec3(0.0f, 0.2f, 0.4f);
+glm::vec3 pointLightColor = glm::vec3(1.0f, 0.55f, 0.2f);
 bool pointLightOn = true;
 
 bool flashlightOn = false;
@@ -527,6 +527,8 @@ void renderScene() {
     if (isAnimating) {
         animationTime += 0.005f; // Animation speed
         glm::vec3 animPos = getSplinePoint(animationTime, cameraPath);
+
+        // We just look at (0,0,0), we just change the camera pos). 
         view = glm::lookAt(animPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 1.0f, 0.0f));
     }
     else {

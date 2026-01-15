@@ -75,6 +75,12 @@
     year = {2009},
     url = {https://sketchfab.com/3d-models/minecraft-zombie-45037ec52b6a4444a0981f916d0dbd43#download},
 }
+@misc{model_diamond,
+    author = {{Mojang Studios}},
+    title = {Diamond Ore Texture},
+    year = {2010},
+    url = {https://texture-packs.com/resourcepack/default-pack/},
+}
 @misc{tex_ground,
     author = {{Mojang Studios}},
     title = {Grass Texture},
@@ -92,20 +98,6 @@
     title = {Minecraft Skybox Texture},
     year = {2011},
     url = {https://texture-packs.com/resourcepack/default-pack/},
-}
-@misc{model_bonfire,
-    author = {{Sketchfab}},
-    title = {Bonfire 3D Model},
-    year = {2026},
-    url = {https://sketchfab.com/3d-models/bonfire-a96d894e8bd14eebafe7cd023178e663},
-    note = {Accesat la 15 Ianuarie 2026}
-}
-@misc{model_tent,
-    author = {{Sketchfab}},
-    title = {Tent 3D Model},
-    year = {2026},
-    url = {https://sketchfab.com/3d-models/tent-9569b78b8d7d4fe1b8d3e8d71ede13d0#download},
-    note = {Accesat la 15 Ianuarie 2026}
 }
 \end{filecontents}
 
@@ -186,7 +178,7 @@ Scena este compusa dintr-un teren vast, populat cu vegetatie si diverse obiecte 
 \begin{itemize}
     \item \textbf{Terenul:} Un plan texturat extins pentru a simula solul \cite{tex_ground}.
     \item \textbf{Vegetatia:} O padure compusa din peste 200 de copaci generati dinamic, folosind texturi de tip billboard \cite{tex_vegetation}.
-    \item \textbf{Obiecte:} Nanosuit \cite{model_nanosuit}, Mario \cite{model_mario}, Creeper \cite{model_creeper}, Zombie \cite{model_zombie}, Bonfire \cite{model_bonfire} și un Cort \cite{model_tent}.
+    \item \textbf{Obiecte:} Nanosuit \cite{model_nanosuit}, Mario \cite{model_mario}, Creeper \cite{model_creeper}, Zombie \cite{model_zombie} si minereuri de diamant \cite{model_diamond}.
     \item \textbf{Skybox:} Un cubemap care ofera context vizual cerului, utilizand o textura dintr-un pachet de resurse Minecraft \cite{tex_skybox}.
 \end{itemize}
 
@@ -224,7 +216,7 @@ In aceasta sectiune sunt detaliate provocarile tehnice intampinate si solutiile 
 \subsubsection{1. Randarea vegetatiei: Tehnica Billboarding}
 \textbf{Problema:} Crearea unei paduri dense (peste 200 de copaci) folosind modele 3D High-Poly ar fi dus la o scadere drastica a numarului de cadre pe secunda (FPS).
 
-\textbf{Rezolvarea mea:} Am utilizat tehnica \textit{Billboarding}. Fiecare copac este reprezentat prin 3 planuri texturate care se intersecteaza la un unghi de 60°. Aceasta structura ofera iluzia de volum din orice unghi de vizualizare orizontal, utilizand doar 12 vertex-uri.
+\textbf{Rezolvarea mea:} Am utilizat tehnica \textit{Static Cross-Quads}. Fiecare copac este reprezentat prin 3 planuri texturate care se intersecteaza la un unghi de 60°. Aceasta structura ofera iluzia de volum din orice unghi de vizualizare orizontal, utilizand doar 12 vertexuri.
 
 \subsubsection{2. Detectia coliziunilor: Algoritmul AABB}
 \textbf{Problema:} Navigarea intr-o scena populata necesita un sistem care sa impiedice camera sa treaca prin obiecte solide.
@@ -310,44 +302,6 @@ Acest model a fost implementat pentru a gestiona trei tipuri de surse de lumină
     \item \textbf{Lanternă (Spotlight):} O sursă de lumină care emite un con de lumină într-o direcție specifică. Este atașată de cameră și are o margine atenuată (penumbra) pentru un efect realist, calculată cu funcția \texttt{smoothstep} în GLSL între unghiul interior și cel exterior al conului.
 \end{itemize}
 
-\subsubsection{3. Ceata pe Skybox}
-Pentru a integra vizual skybox-ul cu restul scenei, în special în condiții de ceață, a fost necesară aplicarea unui efect similar și pe acesta. Deoarece skybox-ul este redat ca fiind la o distanță infinită, nu se poate folosi adâncimea pentru a calcula intensitatea ceții.
-
-Soluția implementată în fragment shader-ul skybox-ului (`skyboxShader.frag`) utilizează coordonata verticală a texturii (`textureCoordinates.y`) pentru a modula efectul. Ideea este că ceața este mai densă la orizont (unde `y` este aproape de 0) și inexistentă în zenit (la polul superior al cubemap-ului, unde `y` este 1).
-
-\begin{enumerate}
-    \item Se calculează un factor de ceață (`factor`) pornind de la `1.0 - abs(textureCoordinates.y)`. Acest calcul returnează 1.0 la orizont și scade spre 0 la poli.
-    \item Factorul este ridicat la o putere pentru a controla finețea tranziției și este multiplicat cu densitatea globală a ceții, asigurând consistența cu ceața aplicată pe restul obiectelor.
-    \item Culoarea finală este un amestec (interpolare liniară cu `mix`) între culoarea originală a skybox-ului și culoarea ceții, pe baza factorului calculat.
-\end{enumerate}
-
-\begin{minted}[frame=lines, framesep=2mm, fontsize=\small]{glsl}
-#version 410 core
-
-in vec3 textureCoordinates;
-out vec4 color;
-
-uniform samplerCube skybox;
-uniform float fogDensity;
-vec4 fogColor = vec4(0.5f, 0.5f, 0.5f, 1.0f);
-
-void main()
-{
-    // Deoarece skybox-ul se afla la o distanta infinita(teoretic), nu putem foloosi distanta fata de camera
-    // Folosim coordonata de pe axa Y pentru a determina unde sa aplicam ceata
-    
-    // Citim culoarea din cube map 
-    vec4 skyboxColor = texture(skybox, textureCoordinates, 2.5 /*LOD - Level of detail*/);
-
-    //la orizont vom avea intensitate maxima, la polii cerului vom avea intensitate minima
-    float factor = clamp(1.0 - abs(textureCoordinates.y), 0.0, 1.0);
-    
-    factor = pow(factor, 1.2/* controleaza cat de lin se face tranzitia*/) * min(fogDensity * 40.0 /*avem nevoie de o densitate mare pe cer*/, 1.0);
-    
-    color = mix(skyboxColor, fogColor, factor);
-}
-\end{minted}
-
 \subsection{Structuri de date}
 Pentru o organizare eficientă a memoriei și a logicii aplicației, am definit structuri dedicate pentru fizică și managementul obiectelor.
 
@@ -414,9 +368,6 @@ Arhitectura software a proiectului este construită pe o structură orientată o
 \texttt{F} & Comutare Lanternă (Flashlight) \\ \hline
 \texttt{V} & Pornire/Oprire animație Spline \\ \hline
 \texttt{3, 4, 5} & Moduri de vizualizare \\ \hline
-\texttt{7, 8} & Modificare factor de ceață \\ \hline
-\texttt{Q, E} & Rotire robot Nanosuit \\ \hline
-\texttt{J, L} & Mișcare sursă de lumină (soare) \\ \hline
 \end{tabular}
 \end{table}
 

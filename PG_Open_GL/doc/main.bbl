@@ -23,31 +23,32 @@
 
 \bibitem{tex_ground}
 \BIBentryALTinterwordspacing
-M.~Studios, ``Grass texture,'' 2009. [Online]. Available:
+{Mojang Studios}, ``Grass texture,'' 2009. [Online]. Available:
   \url{https://texture-packs.com/resourcepack/default-pack/}
 \BIBentrySTDinterwordspacing
 
 \bibitem{tex_vegetation}
 \BIBentryALTinterwordspacing
-T.~M. Bussines, ``Vegetation billboard texture,'' 2026. [Online]. Available:
+{Tech Monkey Bussines}, ``Vegetation billboard texture,'' 2026. [Online].
+  Available:
   \url{https://www.techmonkeybusiness.com/galleries/Texture_Galleries/Billboard_Trees/}
 \BIBentrySTDinterwordspacing
 
 \bibitem{model_nanosuit}
 \BIBentryALTinterwordspacing
-Crytek, ``Nanosuit 3d model,'' 2011. [Online]. Available:
+{Crytek}, ``Nanosuit 3d model,'' 2011. [Online]. Available:
   \url{https://free3d.com/3d-model/crysis-2-nanosuit-2-97837.html}
 \BIBentrySTDinterwordspacing
 
 \bibitem{model_mario}
 \BIBentryALTinterwordspacing
-Nintendo, ``Mario 3d model,'' 2025. [Online]. Available:
+{Nintendo}, ``Mario 3d model,'' 2025. [Online]. Available:
   \url{https://sketchfab.com/3d-models/mario-ds-fbx-552baccb1ef74a799fb7440fdc5fd69d#download}
 \BIBentrySTDinterwordspacing
 
 \bibitem{model_creeper}
 \BIBentryALTinterwordspacing
-M.~Studios, ``Creeper 3d model,'' 2009. [Online]. Available:
+{Mojang Studios}, ``Creeper 3d model,'' 2009. [Online]. Available:
   \url{https://sketchfab.com/3d-models/minecraft-creeper-c986450b4d884c2c94c0d3168671c543#download}
 \BIBentrySTDinterwordspacing
 
@@ -57,22 +58,30 @@ M.~Studios, ``Creeper 3d model,'' 2009. [Online]. Available:
   \url{https://sketchfab.com/3d-models/minecraft-zombie-45037ec52b6a4444a0981f916d0dbd43#download}
 \BIBentrySTDinterwordspacing
 
-\bibitem{model_diamond}
+\bibitem{model_bonfire}
 \BIBentryALTinterwordspacing
-------, ``Diamond ore texture,'' 2010. [Online]. Available:
-  \url{https://texture-packs.com/resourcepack/default-pack/}
+{Sketchfab}, ``Bonfire 3d model,'' 2026, accesat la 15 Ianuarie 2026. [Online].
+  Available:
+  \url{https://sketchfab.com/3d-models/bonfire-a96d894e8bd14eebafe7cd023178e663}
+\BIBentrySTDinterwordspacing
+
+\bibitem{model_tent}
+\BIBentryALTinterwordspacing
+------, ``Tent 3d model,'' 2026, accesat la 15 Ianuarie 2026. [Online].
+  Available:
+  \url{https://sketchfab.com/3d-models/tent-9569b78b8d7d4fe1b8d3e8d71ede13d0#download}
 \BIBentrySTDinterwordspacing
 
 \bibitem{tex_skybox}
 \BIBentryALTinterwordspacing
-------, ``Minecraft skybox texture,'' 2011. [Online]. Available:
+{Mojang Studios}, ``Minecraft skybox texture,'' 2011. [Online]. Available:
   \url{https://texture-packs.com/resourcepack/default-pack/}
 \BIBentrySTDinterwordspacing
 
 \bibitem{catmullrom}
 \BIBentryALTinterwordspacing
-W.~Contributors, ``Catmull–rom spline,'' 2026, accesat la 10 Ianuarie 2026.
-  [Online]. Available:
+{Wikipedia Contributors}, ``Catmull–rom spline,'' 2026, accesat la 10
+  Ianuarie 2026. [Online]. Available:
   \url{https://en.wikipedia.org/wiki/Catmull%E2%80%93Rom_spline}
 \BIBentrySTDinterwordspacing
 

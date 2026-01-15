@@ -1,0 +1,26 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{c+cp}{\PYGZsh{}version 410 core}
+
+\PYG{k}{in}\PYG{+w}{ }\PYG{k+kt}{vec3}\PYG{+w}{ }\PYG{n}{textureCoordinates}\PYG{p}{;}
+\PYG{k}{out}\PYG{+w}{ }\PYG{k+kt}{vec4}\PYG{+w}{ }\PYG{n}{color}\PYG{p}{;}
+
+\PYG{k}{uniform}\PYG{+w}{ }\PYG{k+kt}{samplerCube}\PYG{+w}{ }\PYG{n}{skybox}\PYG{p}{;}
+\PYG{k}{uniform}\PYG{+w}{ }\PYG{k+kt}{float}\PYG{+w}{ }\PYG{n}{fogDensity}\PYG{p}{;}
+\PYG{k+kt}{vec4}\PYG{+w}{ }\PYG{n}{fogColor}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{k+kt}{vec4}\PYG{p}{(}\PYG{l+m+mf}{0.5}\PYG{n}{f}\PYG{p}{,}\PYG{+w}{ }\PYG{l+m+mf}{0.5}\PYG{n}{f}\PYG{p}{,}\PYG{+w}{ }\PYG{l+m+mf}{0.5}\PYG{n}{f}\PYG{p}{,}\PYG{+w}{ }\PYG{l+m+mf}{1.0}\PYG{n}{f}\PYG{p}{);}
+
+\PYG{k+kt}{void}\PYG{+w}{ }\PYG{n}{main}\PYG{p}{()}
+\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{c+c1}{// Deoarece skybox\PYGZhy{}ul se afla la o distanta infinita(teoretic), nu putem foloosi distanta fata de camera}
+\PYG{+w}{    }\PYG{c+c1}{// Folosim coordonata de pe axa Y pentru a determina unde sa aplicam ceata}
+
+\PYG{+w}{    }\PYG{c+c1}{// Citim culoarea din cube map}
+\PYG{+w}{    }\PYG{k+kt}{vec4}\PYG{+w}{ }\PYG{n}{skyboxColor}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{texture}\PYG{p}{(}\PYG{n}{skybox}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{textureCoordinates}\PYG{p}{,}\PYG{+w}{ }\PYG{l+m+mf}{2.5}\PYG{+w}{ }\PYG{c+cm}{/*LOD \PYGZhy{} Level of detail*/}\PYG{p}{);}
+
+\PYG{+w}{    }\PYG{c+c1}{//la orizont vom avea intensitate maxima, la polii cerului vom avea intensitate minima}
+\PYG{+w}{    }\PYG{k+kt}{float}\PYG{+w}{ }\PYG{n}{factor}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{clamp}\PYG{p}{(}\PYG{l+m+mf}{1.0}\PYG{+w}{ }\PYG{o}{\PYGZhy{}}\PYG{+w}{ }\PYG{n}{abs}\PYG{p}{(}\PYG{n}{textureCoordinates}\PYG{p}{.}\PYG{n}{y}\PYG{p}{),}\PYG{+w}{ }\PYG{l+m+mf}{0.0}\PYG{p}{,}\PYG{+w}{ }\PYG{l+m+mf}{1.0}\PYG{p}{);}
+
+\PYG{+w}{    }\PYG{n}{factor}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{pow}\PYG{p}{(}\PYG{n}{factor}\PYG{p}{,}\PYG{+w}{ }\PYG{l+m+mf}{1.2}\PYG{c+cm}{/* controleaza cat de lin se face tranzitia*/}\PYG{p}{)}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{n}{min}\PYG{p}{(}\PYG{n}{fogDensity}\PYG{+w}{ }\PYG{o}{*}\PYG{+w}{ }\PYG{l+m+mf}{40.0}\PYG{+w}{ }\PYG{c+cm}{/*avem nevoie de o densitate mare pe cer*/}\PYG{p}{,}\PYG{+w}{ }\PYG{l+m+mf}{1.0}\PYG{p}{);}
+
+\PYG{+w}{    }\PYG{n}{color}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n}{mix}\PYG{p}{(}\PYG{n}{skyboxColor}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{fogColor}\PYG{p}{,}\PYG{+w}{ }\PYG{n}{factor}\PYG{p}{);}
+\PYG{p}{\PYGZcb{}}
+\end{MintedVerbatim}

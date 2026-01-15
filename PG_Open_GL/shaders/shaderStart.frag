@@ -11,7 +11,7 @@ out vec4 fColor;
 uniform vec3 lightDir;
 uniform vec3 lightColor;
 
-// Point Light (the diamond ore)
+// Point Light (the bonfire)
 uniform vec3 pointLightPos;
 uniform vec3 pointLightColor;
 uniform int pointLightOn;
@@ -41,13 +41,15 @@ float constant = 1.0f;
 float linear = 0.045f;
 float quadratic = 0.0075f;
 
+//Fog color 
+vec3 fogColor = vec3(0.5f, 0.5f, 0.5f);
 vec3 computeFog(vec3 color)
 {
     float fragmentDistance = length(fPosEye.xyz);
     float fogFactor = exp(-pow(fragmentDistance * fogDensity, 2));
     fogFactor = clamp(fogFactor, 0.0f, 1.0f);
     
-    vec3 fogColor = vec3(0.5f, 0.5f, 0.5f);
+
     return mix(fogColor, color, fogFactor);
 }
 
@@ -79,7 +81,7 @@ void main()
 
     if (flashlightOn == 1) {
         // FLASHLIGHT LOGIC
-        // In Eye Space, poziția luminii este (0,0,0) deoarece este atașată camerei
+        // In Eye Space, pozitia luminii este (0,0,0) deoarece este atasata camerei
         vec3 lightDirN = normalize(-fPosEye.xyz); 
         float theta = dot(lightDirN, normalize(-spotLightDir));
         float epsilon = spotLightCutOff - spotLightOuterCutOff;
@@ -98,7 +100,7 @@ void main()
         finalLight = (spotAmbient + spotDiffuse + spotSpecular) * intensity;
     } 
     else {
-        // SPOTLIGHT LOGIC
+        // Directional Light Logic
         float shadow = computeShadow();
         vec3 lightDirN = normalize(lightDir);
         
@@ -112,7 +114,7 @@ void main()
         finalLight = ambient + (1.0 - shadow) * (diffuse + specular);
     }
 
-    // POINT LIGHT
+    // Point Light (in diamond ore)
     if (pointLightOn == 1) {
         vec3 pLightDirN = normalize(pointLightPos - fPosEye.xyz);
         float dist = length(pointLightPos - fPosEye.xyz);

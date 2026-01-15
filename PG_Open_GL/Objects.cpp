@@ -1,13 +1,13 @@
 //
-//  Objects.cpp
-//  OpenGL Advances Lighting
+//� Objects.cpp
+//� OpenGL Advances Lighting
 //
 #include "Objects.hpp"
 #include <iostream>
-#include <algorithm> 
-#include <random> 
-#include <ctime>  
-#include <glm/gtc/matrix_inverse.hpp> 
+#include <algorithm>�
+#include <random>�
+#include <ctime>��
+#include <glm/gtc/matrix_inverse.hpp>�
 #include <GLFW/glfw3.h>
 namespace gps {
 
@@ -30,7 +30,7 @@ namespace gps {
 
 		// This generates some random trees
 		int numberOfTrees = 200;
-		float range = 90.0f; 
+		float range = 90.0f;
 
 		for (int i = 0; i < numberOfTrees; i++) {
 			float x = static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (range * 2)) - range;
@@ -42,7 +42,7 @@ namespace gps {
 			TreeInstance tree;
 			tree.position = glm::vec3(x, -1.0f, z);
 			tree.typeIndex = rand() % 3; // We have 3 model trees
-			tree.scale = 4.0f + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 3.0f)); 
+			tree.scale = 4.0f + static_cast<float>(rand()) / (static_cast<float>(RAND_MAX / 3.0f));
 			tree.rotationY = static_cast<float>(rand() % 360);
 
 			forestInstances.push_back(tree);
@@ -56,8 +56,8 @@ namespace gps {
 		zombie.LoadModel("objects/zombie/Zombie.obj");
 		ground.LoadModel("objects/ground/ground.obj");
 		lightCube.LoadModel("objects/cube/cube.obj");
-		diamondOres.LoadModel("objects/diamondore/diamondore.obj");
-
+		bonfire.LoadModel("objects/bonfire/Bonfire.obj");
+		tent.LoadModel("objects/tent/Tent.obj");
 
 		Model3D* t0 = new Model3D();
 		t0->LoadModel("objects/tree_quad/tree0.obj");
@@ -111,10 +111,10 @@ namespace gps {
 		// ZOMBIE
 		model = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.5f));
-		model = glm::translate(model, glm::vec3(5.0f, -2.0f, 0.0f));
+		model = glm::translate(model, glm::vec3(15.0f, -2.0f, 5.0f));
 		collisionBoxes.push_back(calculateAABB(model, localMin, localMax));
 
-		//ORES
+		//Bonfire
 		model = glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.7f));
 		model = glm::translate(model, glm::vec3(-5.0f, -1.5f, 0.0f));
@@ -123,13 +123,20 @@ namespace gps {
 		//MARIO
 		model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.5f));
-		model = glm::translate(model, glm::vec3(-6.0f, -2.0f, -4.0f));
+		model = glm::translate(model, glm::vec3(-6.0f, -2.0f, 4.0f));
 		collisionBoxes.push_back(calculateAABB(model, localMin, localMax));
+
+		// tent
+		model = glm::mat4(1.0f);
+		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::translate(model, glm::vec3(-6.0f, -1.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.08f));
+		collisionBoxes.push_back(calculateAABB(model, glm::vec3(-12.f, -2.f, -12.f), glm::vec3(12.f, 22.f, 12.f)));
 
 		// CREEPER
 		model = glm::rotate(glm::mat4(1.0f), glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		model = glm::scale(model, glm::vec3(0.05f));
-		model = glm::translate(model, glm::vec3(-80.0f, -20.0f, -80.0f));
+		model = glm::translate(model, glm::vec3(-100.0f, -20.0f, -100.0f));
 		collisionBoxes.push_back(calculateAABB(model, glm::vec3(-10.f, 0.f, -10.f), glm::vec3(10.f, 40.f, 10.f)));
 
 		// NANOSUIT
@@ -162,47 +169,57 @@ namespace gps {
 		// CREEPER
 		model = glm::mat4(1.0f);
 		model = glm::rotate(model, glm::radians(270.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.05f)); 
-		model = glm::translate(model, glm::vec3(-80.0f, -20.0f, -80.0f)); 
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); 
-		setNormalMatrix(shader, model, view); 
+		model = glm::scale(model, glm::vec3(0.05f));
+		model = glm::translate(model, glm::vec3(-100.0f, -20.0f, -100.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		setNormalMatrix(shader, model, view);
 		glUniform1f(repeatLoc, 1.0f);
-		glUniform1f(hasAlphaLoc, 0.0f); 
+		glUniform1f(hasAlphaLoc, 0.0f);
 		creeper.Draw(shader);
 
 		// NANOSUIT
 		model = glm::mat4(1.0f);
 		model = glm::rotate(model, glm::radians(180.0f + angleY), glm::vec3(0.0f, 1.0f, 0.0f));
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); 
-		setNormalMatrix(shader, model, view); glUniform1f(repeatLoc, 1.0f); 
-		glUniform1f(hasAlphaLoc, 0.0f); 
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		setNormalMatrix(shader, model, view); glUniform1f(repeatLoc, 1.0f);
+		glUniform1f(hasAlphaLoc, 0.0f);
 		nanosuit.Draw(shader);
 
 		// ZOMBIE
-		model = glm::mat4(1.0f); 
+		model = glm::mat4(1.0f);
 		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
-		model = glm::scale(model, glm::vec3(0.5f)); 
-		model = glm::translate(model, glm::vec3(5.0f, -2.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.5f));
+		model = glm::translate(model, glm::vec3(15.0f, -2.0f, 5.0f));
 		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
 		setNormalMatrix(shader, model, view); glUniform1f(repeatLoc, 1.0f);
-		glUniform1f(hasAlphaLoc, 1.0f); 
+		glUniform1f(hasAlphaLoc, 1.0f);
 		zombie.Draw(shader);
 
-		// ORES
-		model = glm::mat4(1.0f); 
-		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f)); 
-		model = glm::scale(model, glm::vec3(0.7f)); 
-		model = glm::translate(model, glm::vec3(-5.0f, -1.5f, 0.0f)); 
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); 
-		setNormalMatrix(shader, model, view); glUniform1f(repeatLoc, 1.0f); 
+		// Bonfire
+		model = glm::mat4(1.0f);
+		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.7f));
+		model = glm::translate(model, glm::vec3(-5.0f, -0.9f, 0.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		setNormalMatrix(shader, model, view); glUniform1f(repeatLoc, 1.0f);
 		glUniform1f(hasAlphaLoc, 0.0f);
-		diamondOres.Draw(shader);
+		bonfire.Draw(shader);
+
+		// Tent
+		model = glm::mat4(1.0f);
+		model = glm::rotate(model, glm::radians(180.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::translate(model, glm::vec3(-6.0f, -1.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(0.08f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model));
+		setNormalMatrix(shader, model, view); glUniform1f(repeatLoc, 1.0f);
+		glUniform1f(hasAlphaLoc, 0.0f);
+		tent.Draw(shader);
 
 		// MARIO with time-based animation
 		float timeValue = (float)glfwGetTime();
 
 		model = glm::mat4(1.0f);
-		
+
 		model = glm::scale(model, glm::vec3(0.5f));
 		model = glm::translate(model, glm::vec3(-6.0f, -2.0f, 4.0f));
 		model = glm::rotate(model, glm::radians(90.0f) + timeValue, glm::vec3(0.0f, 1.0f, 0.0f));
@@ -215,9 +232,9 @@ namespace gps {
 
 		// GROUND
 		model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f)); 
-		model = glm::scale(model, glm::vec3(7.0f)); 
-		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); setNormalMatrix(shader, model, view); 
+		model = glm::translate(model, glm::vec3(0.0f, -1.0f, 0.0f));
+		model = glm::scale(model, glm::vec3(7.0f));
+		glUniformMatrix4fv(modelLoc, 1, GL_FALSE, glm::value_ptr(model)); setNormalMatrix(shader, model, view);
 		glUniform1f(repeatLoc, 500.0f); glUniform1f(hasAlphaLoc, 0.0f);
 		ground.Draw(shader);
 
