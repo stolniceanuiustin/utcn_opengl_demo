@@ -12,14 +12,18 @@ namespace gps {
     
     SkyBox::SkyBox()
     {
-        
+        skyboxVAO = 0;
     }
     
     void SkyBox::Load(std::vector<const GLchar*> cubeMapFaces)
     {
         cubemapTexture = LoadSkyBoxTextures(cubeMapFaces);
-        InitSkyBox();
+        if (skyboxVAO == 0)
+        {
+            InitSkyBox();
+        }
     }
+
     
     void SkyBox::Draw(gps::Shader shader, glm::mat4 viewMatrix, glm::mat4 projectionMatrix)
     {
@@ -41,8 +45,8 @@ namespace gps {
         
         glDepthFunc(GL_LESS);
     }
-    
-    GLuint SkyBox::LoadSkyBoxTextures(std::vector<const GLchar*> skyBoxFaces)
+
+GLuint SkyBox::LoadSkyBoxTextures(std::vector<const GLchar*> skyBoxFaces)
     {
         GLuint textureID;
         glGenTextures(1, &textureID);

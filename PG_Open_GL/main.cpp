@@ -81,8 +81,38 @@ GLfloat lightAngle;
 
 gps::Scene myScene;
 
+std::vector<const GLchar*> daySkyboxFaces;
+std::vector<const GLchar*> nightSkyboxFaces;
+
 gps::SkyBox skyBox;
 gps::Shader skyboxShader;
+
+void initSkyboxes() {
+	daySkyboxFaces.push_back("skybox/right.png");
+	daySkyboxFaces.push_back("skybox/left.png");
+	daySkyboxFaces.push_back("skybox/top.png");
+	daySkyboxFaces.push_back("skybox/bottom.png");
+	daySkyboxFaces.push_back("skybox/back.png");
+	daySkyboxFaces.push_back("skybox/front.png");
+
+	nightSkyboxFaces.push_back("skybox/n_right.png");
+	nightSkyboxFaces.push_back("skybox/n_left.png");
+	nightSkyboxFaces.push_back("skybox/n_top.png");
+	nightSkyboxFaces.push_back("skybox/n_bottom.png");
+	nightSkyboxFaces.push_back("skybox/n_back.png");
+	nightSkyboxFaces.push_back("skybox/n_front.png");
+}
+
+void changeSkybox() {
+	if (flashlightOn) {
+		skyBox.Load(nightSkyboxFaces);
+	}
+	else {
+		skyBox.Load(daySkyboxFaces);
+	}
+}
+
+
 
 gps::Shader myCustomShader;
 gps::Shader lightShader;
@@ -152,9 +182,9 @@ void keyboardCallback(GLFWwindow* window, int key, int scancode, int action, int
     }
 
     //Toggle flashlight
-
     if (key == GLFW_KEY_F && action == GLFW_PRESS) {
         flashlightOn = !flashlightOn;
+        changeSkybox();
     }
     if (key >= 0 && key < 1024)
     {
@@ -458,18 +488,6 @@ void initUniforms() {
     glUniform1i(glGetUniformLocation(depthMapShader.shaderProgram, "diffuseTexture"), 0);
 }
 
-void initSkybox() {
-    std::vector<const GLchar*> faces;
-    faces.push_back("skybox/right.png");
-    faces.push_back("skybox/left.png");
-    faces.push_back("skybox/top.png");
-    faces.push_back("skybox/bottom.png");
-    faces.push_back("skybox/back.png");
-    faces.push_back("skybox/front.png");
-
-    skyBox.Load(faces);
-}
-
 void initFBO() {
     glGenFramebuffers(1, &shadowMapFBO);
 
@@ -599,7 +617,8 @@ int main(int argc, const char* argv[]) {
     initShaders();
     initUniforms();
     initFBO();
-    initSkybox();
+    initSkyboxes();
+    skyBox.Load(daySkyboxFaces);
 
     glCheckError();
 
