@@ -545,8 +545,8 @@ void renderScene() {
         glUniform3f(glGetUniformLocation(myCustomShader.shaderProgram, "spotLightDir"), 0.0f, 0.0f, -1.0f);
 
         // Set cone angles for soft edges
-        glUniform1f(glGetUniformLocation(myCustomShader.shaderProgram, "spotLightCutOff"), glm::cos(glm::radians(12.5f)));
-        glUniform1f(glGetUniformLocation(myCustomShader.shaderProgram, "spotLightOuterCutOff"), glm::cos(glm::radians(17.5f)));
+        glUniform1f(glGetUniformLocation(myCustomShader.shaderProgram, "spotLightCutOff"), glm::cos(glm::radians(7.5f)));
+        glUniform1f(glGetUniformLocation(myCustomShader.shaderProgram, "spotLightOuterCutOff"), glm::cos(glm::radians(12.5f)));
     }
 
     // Set the light direction (direction towards the light)

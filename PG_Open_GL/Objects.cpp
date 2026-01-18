@@ -121,9 +121,10 @@ namespace gps {
 		collisionBoxes.push_back(calculateAABB(model, localMin, localMax));
 
 		//MARIO
-		model = glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
+		model = glm::mat4(1.0f);
 		model = glm::scale(model, glm::vec3(0.5f));
 		model = glm::translate(model, glm::vec3(-6.0f, -2.0f, 4.0f));
+		model = glm::rotate(model, glm::radians(90.0f), glm::vec3(0.0f, 1.0f, 0.0f));
 		collisionBoxes.push_back(calculateAABB(model, localMin, localMax));
 
 		// tent
