@@ -21,6 +21,7 @@ uniform int flashlightOn;
 uniform vec3 spotLightDir; // In eye space: vec3(0.0, 0.0, -1.0)
 uniform float spotLightCutOff;
 uniform float spotLightOuterCutOff;
+uniform vec3 handOffset;
 
 // Textures
 uniform sampler2D diffuseTexture;
@@ -82,7 +83,6 @@ void main()
     if (flashlightOn == 1) {
         // FLASHLIGHT LOGIC
         // In Eye Space, pozitia luminii este (0,0,0) deoarece este atasata camerei
-		vec3 handOffset = vec3(0.5f, -0.3f, 0.0f);
         vec3 lightDirN = normalize(handOffset -fPosEye.xyz); 
         float theta = dot(lightDirN, normalize(-spotLightDir));
         float epsilon = spotLightCutOff - spotLightOuterCutOff;
